@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+target/
+.mvn/
+*.class
+*.jar
+*.war
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Build files
+dist/
+build/
+out/
+bin/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+*.lcov
+
+# Docker
+docker/data/
+
+# H2 Database files
+*.db
+*.mv.db
+*.trace.db
+
+# Package files
+*.tar.gz
+*.zip
+
+# Temporary files
+*.tmp
+*.temp
+~*
+
+# Maven wrapper
+!.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd

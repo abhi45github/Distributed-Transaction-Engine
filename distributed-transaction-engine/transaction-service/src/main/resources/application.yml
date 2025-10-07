@@ -1,0 +1,199 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: transaction-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5432/transaction_db
+    username: postgres
+    password: password
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 50
+      minimum-idle: 10
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        jdbc:
+          batch_size: 50
+        order_inserts: true
+        order_updates: true
+
+  # Redis Configuration
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 10000
+    lettuce:
+      pool:
+        max-active: 100
+        max-idle: 50
+        min-idle: 10
+        max-wait: -1
+
+# Redisson Configuration for Distributed Locking
+redisson:
+  single-server-config:
+    address: redis://localhost:6379
+    connection-pool-size: 100
+    connection-minimum-idle-size: 10
+    timeout: 10000
+    retry-attempts: 3
+    retry-interval: 1500
+
+# Distributed Lock Configuration
+distributed:
+  lock:
+    wait-time: 10
+    lease-time: 30
+
+# Resilience4j Circuit Breaker Configuration
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 100
+        sliding-window-type: COUNT_BASED
+        minimum-number-of-calls: 50
+        permitted-number-of-calls-in-half-open-state: 10
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        event-consumer-buffer-size: 100
+        register-health-indicator: true
+
+    instances:
+      transaction-processing:
+        base-config: default
+        sliding-window-size: 200
+        failure-rate-threshold: 40
+        wait-duration-in-open-state: 20s
+        permitted-number-of-calls-in-half-open-state: 20
+
+  # Retry Configuration
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 1s
+        retry-exceptions:
+          - java.io.IOException
+          - java.sql.SQLException
+          - org.springframework.dao.DataAccessException
+
+    instances:
+      transaction-processing:
+        base-config: default
+        max-attempts: 5
+        wait-duration: 2s
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+
+  # Bulkhead Configuration for Thread Isolation
+  bulkhead:
+    configs:
+      default:
+        max-concurrent-calls: 1000
+        max-wait-duration: 10ms
+
+    instances:
+      transaction-processing:
+        base-config: default
+        max-concurrent-calls: 2000
+        max-wait-duration: 50ms
+
+  # Time Limiter Configuration
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 3s
+        cancel-running-future: true
+
+    instances:
+      transaction-processing:
+        base-config: default
+        timeout-duration: 5s
+
+# Eureka Client Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: localhost
+    prefer-ip-address: true
+
+# Actuator Configuration
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      show-components: always
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+    redis:
+      enabled: true
+    db:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: production
+
+# Logging Configuration
+logging:
+  level:
+    root: INFO
+    com.transactionengine: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    io.github.resilience4j: DEBUG
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d %p %c{1.} [%t] %m%n"
+
+# OpenAPI/Swagger Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operationsSorter: method
+
+# Custom Application Properties
+app:
+  transaction:
+    max-retries: 5
+    batch-size: 100
+    processing-threads: 20
+    tps-target: 10000
+    performance:
+      enable-metrics: true
+      metric-interval: 60
